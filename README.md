@@ -1,5 +1,5 @@
 # pySuperMelee
-2-player Star Control SuperMelee clone in pygame.
+2-player Star Control SuperMelee-like space shooter in pygame.
 
 ![supermelee2](https://user-images.githubusercontent.com/80536083/158037043-adb952f9-6dd8-42db-93ec-5fb8c2ef6b2b.PNG)
 
