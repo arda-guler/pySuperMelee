@@ -1,5 +1,9 @@
 import pygame as g
 import numpy as np
+import random
+import math
+M_PI = math.pi
+import glob
 
 from spaceship import *
 from projectile import *
@@ -7,6 +11,10 @@ from sound import *
 
 ships = []
 projectiles = []
+bgms = glob.glob("data/bgm/*")
+backgrounds = glob.glob("data/img/background/*")
+score_A = 0
+score_B = 0
 
 sp_plasma = g.image.load("data/img/projectiles/plasma.png")
 sp_missile = g.image.load("data/img/projectiles/missile.png")
@@ -21,7 +29,17 @@ def w2s(pos):
 
     return np.array([cx, cy])
 
-def create_projectile(sender, p_type, target=None):
+# screen to world coordinate converter
+def s2w(pos):
+    screen_x_mid = 320
+    screen_y_mid = 240
+
+    sy = - pos[1] + screen_y_mid
+    sx = pos[1] - screen_x_mid
+
+    return np.array([sx, sy])
+
+def create_projectile(sender, p_type, target=None, dummy=False):
     global projectiles
     global sp_plasma, sp_missile
     
@@ -40,7 +58,7 @@ def create_projectile(sender, p_type, target=None):
                               target=target,
                               homing=False,
                               sounds=[],
-                              expire_time=1)
+                              expire_time=0.75)
 
     elif p_type == "missile":
         p_size = 2
@@ -58,20 +76,21 @@ def create_projectile(sender, p_type, target=None):
                               homing=True,
                               sounds=[],
                               expire_time=6)
+
+    if not dummy:
+        projectiles.append(new_proj)
         
-    projectiles.append(new_proj)
+    return new_proj
 
 def main():
-    global ships, projectiles
+    global ships, projectiles, score_A, score_B, bgms, backgrounds
 
-    print("\nCONTROLS:")
-    print("Player A: Arrow keys to move, Enter to shoot.")
-    print("Player B: WASD to move, T to shoot.\n")
+    projectiles = []
 
     panel = g.image.load("data/img/ui/panel.png")
     A_light = g.image.load("data/img/ui/green_light.png")
     B_light = g.image.load("data/img/ui/purple_light.png")
-    background = g.image.load("data/img/background/orion_nebula.png")
+    background = g.image.load(random.choice(backgrounds))
     
     # initialization
     g.init()
@@ -111,7 +130,8 @@ def main():
                     max_speed=48,
                     attack_cooldown=0.2)
     
-    s_A.set_pos(np.array([-200.0, 0.0]))
+    s_A.set_pos(np.array([random.uniform(-200.0, 200.0), random.uniform(-150.0, 150.0)]))
+    s_A.set_orient(random.uniform(0.0, 2*M_PI))
 
     s_B = spaceship(name="PRM Fwiffo",
                     model="Type-III Destroyer",
@@ -128,16 +148,31 @@ def main():
                     max_speed=20,
                     attack_cooldown=2)
 
-    s_B.set_pos(np.array([200.0, 0.0]))
+    s_B.set_pos(np.array([random.uniform(-200.0, 200.0), random.uniform(-150.0, 150.0)]))
+    s_B.set_orient(random.uniform(0.0, 2*M_PI))
+
+    def draw_range(ship):
+        if ship == s_A:
+            color = (0,255,0)
+        else:
+            color = (255,0,255)
+
+        proj = create_projectile(ship, ship.projectile, dummy=True)
+        R = proj.expire_time * proj.speed + ship.size + proj.size * 1.5
+            
+        g.draw.circle(mw, color, w2s(ship.pos), R, 2)
 
     ships = [s_A, s_B]
+
+    range_display_time_A = 0
+    range_display_time_B = 0
 
     game_tick = 0
     game_time = 0
     dt = 0.02
     game_active = True
     mw.fill((0,0,0))
-    playBGM("bgm")
+    playBGM(random.choice(bgms))
     
     while game_active:
 
@@ -161,6 +196,8 @@ def main():
                 s_A.attack()
                 if not getChannelBusy(1):
                     playSfx(s_A.sounds["firing"], 1)
+        if key_inputs[g.K_p]:
+            range_display_time_A = 3
 
         # ship B controls
         if key_inputs[g.K_a]:
@@ -175,6 +212,8 @@ def main():
                 s_B.attack()
                 if not getChannelBusy(2):
                     playSfx(s_B.sounds["firing"], 2)
+        if key_inputs[g.K_g]:
+            range_display_time_B = 3
 
         # update
         for proj in projectiles:
@@ -202,6 +241,16 @@ def main():
         for ship in ships:
             ship.update_pos(dt)
             ship.update_energy(dt)
+            
+            # punish going out of screen
+            if (ship.pos[0] < -325 or ship.pos[0] > 325 or ship.pos[1] < -245 or ship.pos[1] > 245) and game_tick % 50 == 0:
+                ship.damage(5)
+                if ship == s_A:
+                    if not getChannelBusy(3):
+                        playSfx(ship.sounds["damage"], 3)
+                else:
+                    if not getChannelBusy(4):
+                        playSfx(ship.sounds["damage"], 4)
 
         # render
         mw.blit(background, [0,0])
@@ -213,6 +262,14 @@ def main():
         for proj in projectiles:
             screen_pos = w2s(proj.pos)
             mw.blit(proj.get_texture(), screen_pos)
+
+        if range_display_time_A > 0:
+            range_display_time_A -= dt
+            draw_range(s_A)
+
+        if range_display_time_B > 0:
+            range_display_time_B -= dt
+            draw_range(s_B)
 
         mw.blit(panel, [0,0])
         crew_lights_A = max(int(s_A.crew/15),0)
@@ -238,10 +295,14 @@ def main():
 
         if s_A.crew <= 0 and s_B.crew > 0:
             print("Player B wins!")
+            score_B += 1
+            print("Scores (A-B):", score_A, "-", score_B)
             g.time.wait(5000)
             game_active = False
         elif s_A.crew > 0 and s_B.crew <= 0:
             print("Player A wins!")
+            score_A += 1
+            print("Scores (A-B):", score_A, "-", score_B)
             g.time.wait(5000)
             game_active = False
         elif s_A.crew <= 0 and s_B.crew <= 0:
@@ -250,14 +311,19 @@ def main():
             game_active = False
 
         g.display.update()
-
-        if game_tick % 100 == 0:
-            pass
-            #print(s_A.energy)
             
         g.time.wait(20)
         game_tick += 1
         game_time += dt
 
-main()
+def init():
+    
+    print("\nCONTROLS:")
+    print("Player A: Arrow keys to move, Enter to shoot.")
+    print("Player B: WASD to move, T to shoot.\n")
+    
+    while True:
+        main()
+    
+init()
 g.quit()

@@ -30,7 +30,7 @@ def playSfx(track, channel=1, volume=1, loops=0):
 
 def playBGM(track, volume=1):
     chn = mixer.Channel(0)
-    track_path = "data/bgm/" + str(track) + ".ogg"
+    track_path = track
     snd = mixer.Sound(track_path)
     chn.set_volume(volume)
     chn.play(snd, -1)

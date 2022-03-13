@@ -73,6 +73,25 @@ class spaceship:
 
         self.orient_matrix = np.array([x, y])
 
+    def set_orient(self, orient):
+        self.orient = orient
+
+        if self.orient > 2 * M_PI:
+            self.orient = self.orient - (2 * M_PI)
+        elif self.orient < 0:
+            self.orient = self.orient + 2 * M_PI
+
+        x_rad = (self.orient - M_PI * 0.5)
+        if x_rad < 0:
+            x_rad = x_rad + 2 * M_PI
+        elif x_rad > 2 * M_PI:
+            x_rad = x_rad - 2 * M_PI
+            
+        x = np.array([math.cos(x_rad), math.sin(x_rad)])
+        y = np.array([-math.sin(self.orient), math.cos(self.orient)])
+
+        self.orient_matrix = np.array([x, y])
+
     def update_energy(self, dt):
         self.energy += self.energy_generation * dt
 
