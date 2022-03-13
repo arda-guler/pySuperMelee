@@ -7,10 +7,12 @@ Player A Controls;
 - Up Arrow to accelerate
 - Left & Right arrow to rotate
 - Enter to shoot
+- P to display engagement range
 
 Player B Controls;
 - W to accelerate
 - A & D to rotate
 - T to shoot
+- G to display engagement range
 
 (Controls can be changed in supermelee.py)

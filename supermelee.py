@@ -88,8 +88,14 @@ def main():
     projectiles = []
 
     panel = g.image.load("data/img/ui/panel.png")
+    panel_light_damage = g.image.load("data/img/ui/panel_light_damage.png")
+    panel_medium_damage = g.image.load("data/img/ui/panel_medium_damage.png")
+    panel_heavy_damage =g.image.load("data/img/ui/panel_heavy_damage.png")
+    
     A_light = g.image.load("data/img/ui/green_light.png")
+    A_light_border = g.image.load("data/img/ui/green_light_border.png")
     B_light = g.image.load("data/img/ui/purple_light.png")
+    B_light_border = g.image.load("data/img/ui/purple_light_border.png")
     background = g.image.load(random.choice(backgrounds))
     
     # initialization
@@ -271,11 +277,39 @@ def main():
             range_display_time_B -= dt
             draw_range(s_B)
 
-        mw.blit(panel, [0,0])
+        if (s_A.crew + s_B.crew) >= (s_A.max_crew + s_B.max_crew):
+            mw.blit(panel, [0,0])
+        elif (s_A.crew + s_B.crew) > (s_A.max_crew + s_B.max_crew) * 0.75:
+            mw.blit(panel_light_damage, [0,0])
+        elif (s_A.crew + s_B.crew) > (s_A.max_crew + s_B.max_crew) * 0.5:
+            mw.blit(panel_medium_damage, [0,0])
+        else:
+            mw.blit(panel_heavy_damage, [0,0])
+        
         crew_lights_A = max(int(s_A.crew/15),0)
+        max_crew_lights_A = int(s_A.max_crew/15)
         crew_lights_B = max(int(s_B.crew/15),0)
+        max_crew_lights_B = int(s_B.max_crew/15)
         energy_lights_A = max(int(s_A.energy/50),0)
+        max_energy_lights_A = int(s_A.max_energy/50)
         energy_lights_B = max(int(s_B.energy/50),0)
+        max_energy_lights_B = int(s_B.max_energy/50)
+
+        for i in range(max_crew_lights_A):
+            light_pos = [14 + i*16, 428]
+            mw.blit(A_light_border, light_pos)
+
+        for i in range(max_crew_lights_B):
+            light_pos = [14 + i*16, 438]
+            mw.blit(B_light_border, light_pos)
+
+        for i in range(max_energy_lights_A):
+            light_pos = [446 + i*16, 428]
+            mw.blit(A_light_border, light_pos)
+
+        for i in range(max_energy_lights_B):
+            light_pos = [446 + i*16, 438]
+            mw.blit(B_light_border, light_pos)
 
         for i in range(crew_lights_A):
             light_pos = [14 + i*16, 428]
